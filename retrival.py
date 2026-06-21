@@ -21,13 +21,11 @@ client = QdrantClient(path="./embeddings")
 vector_store = QdrantVectorStore(client=client, collection_name='candidates')
 index = VectorStoreIndex.from_vector_store(vector_store, embed_model=embed_model)
 
-def retrieve_chunk_type(jd_text, chunk_type, filters, raw_top_k):
-    type_filter = MetadataFilter(key="chunk_type", value=chunk_type, operator=FilterOperator.EQ)
-    combined = MetadataFilters(filters=[type_filter] + ([filters] if filters else [])) 
+def retrieve_chunk_type(jd_text, chunk_type, raw_top_k):
+    type_filter = MetadataFilters(filters=[MetadataFilter(key="chunk_type", value=chunk_type, operator=FilterOperator.EQ)])
+    nodes = index.as_retriever(similarity_top_k=raw_top_k, filters=type_filter).retrieve(jd_text)
  
-    nodes = index.as_retriever(similarity_top_k=raw_top_k, filters=combined).retrieve(jd_text)
- 
-    best = {} 
+    best = {}
     for n in nodes:
         cid = n.node.metadata["candidate_id"]
         if cid not in best or n.score > best[cid].score:
@@ -37,14 +35,11 @@ def retrieve_chunk_type(jd_text, chunk_type, filters, raw_top_k):
 
 def retrieve(jd_text, filters=None, top_k=TOP_K, raw_top_k=RAW_TOP_K, weights=None, rrf_k=60):
     weights = weights or {ct: 1.0 for ct in ["profile_summary", "skills", "career_history"]}
-    
-    print(weights)
-
+ 
     rrf_scores = defaultdict(float)
     contributions = defaultdict(dict)
-
     for chunk_type in ["profile_summary", "skills", "career_history"]:
-        for rank, n in enumerate(retrieve_chunk_type(jd_text, chunk_type, filters, raw_top_k), start=1):
+        for rank, n in enumerate(retrieve_chunk_type(jd_text, chunk_type, raw_top_k), start=1):
             cid = n.node.metadata["candidate_id"]
             rrf_scores[cid] += weights[chunk_type] / (rrf_k + rank)
             contributions[cid][chunk_type] = {"score": n.score, "rank": rank, "text": n.node.text}
@@ -56,12 +51,7 @@ if __name__ == "__main__":
     jd = Document('data/job_description.docx')
     jd_text = '\n'.join([paragraph.text for paragraph in jd.paragraphs])
 
-    filters = MetadataFilters(filters=[
-        MetadataFilter(key="open_to_work_flag", value="true", operator=FilterOperator.EQ),
-        MetadataFilter(key="total_experience_years", value=3, operator=FilterOperator.GTE),
-    ])
- 
-    for r in retrieve(jd_text, filters=filters,weights= {"profile_summary":0.5, "skills":0.65, "career_history":0.75}):
+    for r in retrieve(jd_text, weights= {"profile_summary":0.5, "skills":0.65, "career_history":0.75}):
         print(f"{r['candidate_id']}\t{r['rrf_score']:.4f}\t{list(r['contributions'])}")
  
     client.close()
