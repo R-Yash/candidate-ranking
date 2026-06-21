@@ -1,17 +1,23 @@
 from collections import defaultdict
-
-from llama_index.core import StorageContext, load_index_from_storage
+ 
+from qdrant_client import QdrantClient
+from llama_index.core import VectorStoreIndex
+from llama_index.core.vector_stores import MetadataFilters, MetadataFilter, FilterOperator, FilterCondition
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.vector_stores.faiss import FaissVectorStore
+from llama_index.vector_stores.qdrant import QdrantVectorStore
 
-embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en")
+embed_model = HuggingFaceEmbedding(
+                model_name="BAAI/bge-small-en", 
+                cache_folder="./models",
+                embed_batch_size=64
+            )
 
-vector_store = FaissVectorStore.from_persist_dir("./storage")
-storage_context = StorageContext.from_defaults(vector_store=vector_store, persist_dir="./storage")
-index = load_index_from_storage(storage_context, embed_model=embed_model)
-retriever = index.as_retriever(similarity_top_k=2000)
+client = QdrantClient(path="./embeddings")
+vector_store = QdrantVectorStore(client=client, collection_name='candidates')
+index = VectorStoreIndex.from_vector_store(vector_store, embed_model=embed_model)
 
-def retrieve(jd_text, top_k=100):
+def retrieve(jd_text, top_k=100, filters=None):
+    retriever = index.as_retriever(similarity_top_k=2000, filters=filters)
     nodes = retriever.retrieve(jd_text)
 
     best_score = defaultdict(float)
@@ -32,3 +38,5 @@ def retrieve(jd_text, top_k=100):
         }
         for cid, score in ranked
     ]
+
+# TODO: Metadata filtering

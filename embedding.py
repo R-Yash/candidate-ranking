@@ -1,9 +1,9 @@
 import json
-import faiss
+from qdrant_client import QdrantClient
 from llama_index.core import VectorStoreIndex, StorageContext
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.vector_stores.faiss import FaissVectorStore
-
+from llama_index.vector_stores.qdrant import QdrantVectorStore
+ 
 from chunking import chunk
 
 data = json.loads(open("data/sample_candidates.json").read())
@@ -15,8 +15,8 @@ embed_model = HuggingFaceEmbedding(
                 embed_batch_size=64
             ) 
 
-faiss_index = faiss.IndexFlatIP(384)
-vector_store = FaissVectorStore(faiss_index=faiss_index)
+client = QdrantClient(path="./embeddings")
+vector_store = QdrantVectorStore(client=client, collection_name="candidates")
 storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
 index = VectorStoreIndex.from_documents(
@@ -26,4 +26,4 @@ index = VectorStoreIndex.from_documents(
     show_progress=True,
 )
 
-index.storage_context.persist(persist_dir="./storage")
+index.storage_context.persist(persist_dir="./embeddings")
