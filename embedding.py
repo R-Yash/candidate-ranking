@@ -25,5 +25,3 @@ index = VectorStoreIndex.from_documents(
     embed_model=embed_model,
     show_progress=True,
 )
-
-index.storage_context.persist(persist_dir="./embeddings")
