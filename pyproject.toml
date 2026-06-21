@@ -5,7 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "faiss-cpu>=1.14.3",
     "ipykernel>=7.3.0",
     "llama-index>=0.14.22",
+    "llama-index-embeddings-huggingface>=0.7.0",
+    "llama-index-vector-stores-faiss>=0.6.0",
     "pip>=26.1.2",
 ]
