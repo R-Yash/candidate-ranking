@@ -12,3 +12,8 @@ uv.lock
 
 # Test Files
 TESTING.ipynb
+
+# Big Files
+models
+embeddings
+data
