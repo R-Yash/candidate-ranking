@@ -2,9 +2,14 @@ from collections import defaultdict
  
 from qdrant_client import QdrantClient
 from llama_index.core import VectorStoreIndex
-from llama_index.core.vector_stores import MetadataFilters, MetadataFilter, FilterOperator, FilterCondition
+from llama_index.core.vector_stores import MetadataFilters, MetadataFilter, FilterOperator
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.vector_stores.qdrant import QdrantVectorStore
+
+from docx import Document
+
+RAW_TOP_K = 2000
+TOP_K = 100
 
 embed_model = HuggingFaceEmbedding(
                 model_name="BAAI/bge-small-en", 
@@ -16,27 +21,47 @@ client = QdrantClient(path="./embeddings")
 vector_store = QdrantVectorStore(client=client, collection_name='candidates')
 index = VectorStoreIndex.from_vector_store(vector_store, embed_model=embed_model)
 
-def retrieve(jd_text, top_k=100, filters=None):
-    retriever = index.as_retriever(similarity_top_k=2000, filters=filters)
-    nodes = retriever.retrieve(jd_text)
-
-    best_score = defaultdict(float)
-    best_node = {}
+def retrieve_chunk_type(jd_text, chunk_type, filters, raw_top_k):
+    type_filter = MetadataFilter(key="chunk_type", value=chunk_type, operator=FilterOperator.EQ)
+    combined = MetadataFilters(filters=[type_filter] + ([filters] if filters else [])) 
+ 
+    nodes = index.as_retriever(similarity_top_k=raw_top_k, filters=combined).retrieve(jd_text)
+ 
+    best = {} 
     for n in nodes:
         cid = n.node.metadata["candidate_id"]
-        if n.score > best_score[cid]:
-            best_score[cid] = n.score
-            best_node[cid] = n
+        if cid not in best or n.score > best[cid].score:
+            best[cid] = n
+ 
+    return sorted(best.values(), key=lambda n: n.score, reverse=True)
 
-    ranked = sorted(best_score.items(), key=lambda x: x[1], reverse=True)[:top_k]
-    return [
-        {
-            "candidate_id": cid,
-            "score": score,
-            "matched_chunk_type": best_node[cid].node.metadata["chunk_type"],
-            "matched_text": best_node[cid].node.text,
-        }
-        for cid, score in ranked
-    ]
+def retrieve(jd_text, filters=None, top_k=TOP_K, raw_top_k=RAW_TOP_K, weights=None, rrf_k=60):
+    weights = weights or {ct: 1.0 for ct in ["profile_summary", "skills", "career_history"]}
+    
+    print(weights)
 
-# TODO: Metadata filtering
+    rrf_scores = defaultdict(float)
+    contributions = defaultdict(dict)
+
+    for chunk_type in ["profile_summary", "skills", "career_history"]:
+        for rank, n in enumerate(retrieve_chunk_type(jd_text, chunk_type, filters, raw_top_k), start=1):
+            cid = n.node.metadata["candidate_id"]
+            rrf_scores[cid] += weights[chunk_type] / (rrf_k + rank)
+            contributions[cid][chunk_type] = {"score": n.score, "rank": rank, "text": n.node.text}
+ 
+    ranked = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+    return [{"candidate_id": cid, "rrf_score": score, "contributions": contributions[cid]} for cid, score in ranked]
+
+if __name__ == "__main__":
+    jd = Document('data/job_description.docx')
+    jd_text = '\n'.join([paragraph.text for paragraph in jd.paragraphs])
+
+    filters = MetadataFilters(filters=[
+        MetadataFilter(key="open_to_work_flag", value="true", operator=FilterOperator.EQ),
+        MetadataFilter(key="total_experience_years", value=3, operator=FilterOperator.GTE),
+    ])
+ 
+    for r in retrieve(jd_text, filters=filters,weights= {"profile_summary":0.5, "skills":0.65, "career_history":0.75}):
+        print(f"{r['candidate_id']}\t{r['rrf_score']:.4f}\t{list(r['contributions'])}")
+ 
+    client.close()

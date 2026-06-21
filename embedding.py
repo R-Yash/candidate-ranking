@@ -6,8 +6,11 @@ from llama_index.vector_stores.qdrant import QdrantVectorStore
  
 from chunking import chunk
 
-data = json.loads(open("data/sample_candidates.json").read())
-docs = chunk(data)
+# data = json.loads(open("data/sample_candidates.json").read())
+with open('data/candidates.jsonl') as f:
+    data = [json.loads(line) for line in f]
+
+docs = chunk(data[:1000])
 
 embed_model = HuggingFaceEmbedding(
                 model_name="BAAI/bge-small-en", 
@@ -25,3 +28,5 @@ index = VectorStoreIndex.from_documents(
     embed_model=embed_model,
     show_progress=True,
 )
+
+client.close() 
