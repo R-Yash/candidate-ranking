@@ -4,8 +4,8 @@ import os
 import pickle 
 
 def get_vocabulary(path):
-    with open(path, "r") as f:
-        vocab = pickle.load(path) 
+    with open(path, "rb") as f:
+        vocab = pickle.load(f) 
     return vocab
 
 def parse_jd(jd_text):
