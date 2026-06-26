@@ -9,6 +9,7 @@ wheels/
 # Virtual environments
 .venv
 uv.lock
+.env
 
 # Test Files
 TESTING.ipynb

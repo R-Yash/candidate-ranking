@@ -10,12 +10,12 @@ from chunking import chunk
 with open('data/candidates.jsonl') as f:
     data = [json.loads(line) for line in f]
 
-docs = chunk(data[:1000])
+docs = chunk(data)
 
 embed_model = HuggingFaceEmbedding(
                 model_name="BAAI/bge-small-en", 
                 cache_folder="./models",
-                embed_batch_size=64
+                embed_batch_size=128
             ) 
 
 client = QdrantClient(path="./embeddings")

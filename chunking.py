@@ -27,18 +27,21 @@ def chunk(data):
             )
         docs.append(doc_skills)
  
-        for job in candidate.get("career_history", []):
+        career_history = candidate.get("career_history")
+        jobs_text = []
+        for job in career_history:
             job_text = (
                 f"Role: {job.get('title')} at {job.get('company')}\n"
                 f"Industry: {job.get('industry')}\n"
                 f"Description: {job.get('description')}"
             )
- 
-            doc_job = Document(
-                    text=job_text,
-                    metadata={"candidate_id": id, "chunk_type": "career_history"},
-                    excluded_embed_metadata_keys=["candidate_id", "chunk_type"]
-                )
-            docs.append(doc_job)
- 
+            jobs_text.append(job_text)
+        
+        doc_job = Document(
+                text="\n\n".join(jobs_text),
+                metadata={"candidate_id": id, "chunk_type": "career_history"},
+                excluded_embed_metadata_keys=["candidate_id", "chunk_type"]
+            )
+        docs.append(doc_job)
+            
     return docs
