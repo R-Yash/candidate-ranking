@@ -1,21 +1,22 @@
-import re
 import json
 import os
 import pickle
-from google import genai
-from dotenv import load_dotenv
+
 from docx import Document
+from dotenv import load_dotenv
+from google import genai
+from google.genai import types
+
 load_dotenv()
 
 def get_vocabulary(path):
     with open(path, "rb") as f:
-        vocab = pickle.load(f) 
-    return vocab
+        return pickle.load(f)
 
-def parse_jd(jd_text):
+def parse_jd(jd_text: str) -> dict:
     client = genai.Client()
-    vocab = get_vocabulary("skill_vocab.pkl")
-    
+    vocab = get_vocabulary("artifacts/skill_vocab.pkl")
+
     prompt = f"""
     Extract the following information from the job description below.
     Return ONLY a valid JSON object with the exact keys:
@@ -36,20 +37,31 @@ def parse_jd(jd_text):
     Job Description:
     {jd_text}
     """
-    
-    response = client.models.generate_content(
-    model='gemini-2.5-flash',
-    contents=prompt,
-    config={
-        'response_mime_type': 'application/json'
-        },
+
+    llm_response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt,
+        config={"response_mime_type": "application/json"},
     )
-    
-    return response.text
-    
+    jd_parsed: dict = json.loads(llm_response.text)
+
+    embed_response = client.models.embed_content(
+        model="gemini-embedding-2",
+        contents=jd_text,
+        config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY", output_dimensionality=768),
+    )
+    jd_vector: list[float] = embed_response.embeddings[0].values
+
+    with open("artifacts/jd_parsed.pkl", "wb") as f:
+        pickle.dump(jd_parsed, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open("artifacts/jd_embedding.pkl", "wb") as f:
+        pickle.dump(jd_vector, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+    return jd_parsed
 
 if __name__ == "__main__":
-    jd = Document('data/job_description.docx')
-    jd_text = '\n'.join([paragraph.text for paragraph in jd.paragraphs])
+    jd = Document("data/job_description.docx")
+    jd_text = "\n".join(p.text for p in jd.paragraphs)
 
-    print(parse_jd(jd_text))
+    result = parse_jd(jd_text)
+    print(json.dumps(result, indent=2))
