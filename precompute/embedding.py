@@ -7,7 +7,7 @@ from llama_index.core import VectorStoreIndex, StorageContext
 from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 from llama_index.vector_stores.qdrant import QdrantVectorStore
 
-from chunking import chunk
+from precompute.chunking import chunk
 from dotenv import load_dotenv
 load_dotenv()
 
