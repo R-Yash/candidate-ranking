@@ -387,7 +387,7 @@ if __name__ == "__main__":
     print(f"Experience: {parsed_jd['min_experience']}–{parsed_jd['max_experience']} years")
     print(f"Notice: ≤{parsed_jd['preferred_notice_days']} days preferred\n")
 
-    retrieved = retrieve(top_k=1500, weights={"profile_summary": 0.65, "skills": 0.65, "career_history": 0.75, "graph": 1.0})
+    retrieved = retrieve(top_k=1500,raw_top_k=5000,weights={"profile_summary": 0.65, "skills": 0.65, "career_history": 0.75, "graph": 0.9})
     print(f"Retrieved {len(retrieved)} candidates\n")
 
     candidates = load_candidates_for_ids(

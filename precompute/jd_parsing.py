@@ -52,6 +52,8 @@ def parse_jd(jd_text: str) -> dict:
     )
     jd_vector: list[float] = embed_response.embeddings[0].values
 
+    with open("artifacts/jd_text.pkl", "wb") as f:
+        pickle.dump(jd_text, f, protocol=pickle.HIGHEST_PROTOCOL)
     with open("artifacts/jd_parsed.pkl", "wb") as f:
         pickle.dump(jd_parsed, f, protocol=pickle.HIGHEST_PROTOCOL)
     with open("artifacts/jd_embedding.pkl", "wb") as f:

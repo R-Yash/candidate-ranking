@@ -9,7 +9,7 @@ from rapidfuzz import process, fuzz
 
 from docx import Document
 
-RAW_TOP_K = 2000
+RAW_TOP_K = 5000
 TOP_K = 500
 RRF_K = 60
 GRAPH_HOP2_DISCOUNT = 0.4
@@ -88,11 +88,3 @@ def retrieve(top_k: int = TOP_K, raw_top_k: int = RAW_TOP_K, weights: dict | Non
  
     ranked = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
     return [{"candidate_id": cid, "rrf_score": score} for cid, score in ranked]
-
-if __name__ == "__main__":
-    results = retrieve(weights={"profile_summary": 0.6, "skills": 0.65, "career_history": 0.75, "graph": 1.0})
-
-    for r in results:
-        print(f"{r['candidate_id']}\t{r['rrf_score']:.4f}")
- 
-    client.close()
