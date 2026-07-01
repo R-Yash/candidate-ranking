@@ -31,9 +31,9 @@ data/
 pip install -r requirements.txt
 ```
 
-2) Download precomputed embeddings from HF
+2) Download precomputed embeddings and candidate dataset from HF
 ```bash
-python download_embeddings.py
+python download.py
 ```
 ## Ranking
 
