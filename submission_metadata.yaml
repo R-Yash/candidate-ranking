@@ -1,0 +1,82 @@
+# ============================================================================
+# Team identity
+# ============================================================================
+team_name: "Team Z" 
+
+primary_contact:
+  name: "Raja Yashwanth Avantsa"
+  email: "yashwanth5836@gmail.com"  
+  phone: "+91-7416501516"       
+
+team_members:
+  - name: "Raja Yashwanth Avantsa"
+    email: "yashwanth5836@gmail.com"
+    role: "Leader / Sole Member"          
+
+
+# ============================================================================
+# Code and reproducibility
+# ============================================================================
+
+github_repo: "https://github.com/R-Yash/candidate-ranking"
+
+sandbox_link: "https://huggingface.co/spaces/R-Yash/CandidateRanking-Demo"
+
+reproduce_command: "python rank.py submission.csv"
+
+# ============================================================================
+# Compute environment
+# ============================================================================
+
+compute:
+  platform: "Local Windows environment"                    
+  cpu_cores: 4                                  
+  ram_gb: 16                                    
+  python_version: "3.13.5"                      
+  os: "windows 10"                              
+  uses_gpu_for_inference: false                 
+  has_network_during_ranking: false             
+  pre_computation_required: false               
+  pre_computation_time_minutes: 180               
+
+# ============================================================================
+# AI tools declaration
+# ============================================================================
+
+ai_tools_used:
+  - "Claude"        
+  - "GitHub Copilot"  
+
+
+ai_usage_summary: |
+  - Used Claude for code review, debugging and writing docs/readme.
+  - Used GitHub Copilot for autocomplete and documentation search.
+  - No candidate data was sent to any LLM as part of the ranking step or at any point.
+  - Gemini API calls are confined to one-time precompute (embedding candidates, parsing the JD) and never run during rank.py. 
+
+# ============================================================================
+# Approach summary
+# ============================================================================
+methodology_summary: |
+  Retrieval fuses three dense-embedding searches (profile summary, skills,
+  career history via Gemini embeddings in Qdrant) with a NetworkX skill
+  co-occurrence graph, combined via RRF. Candidates are then scored with a
+  weighted function: RRF score (0.30), required/preferred skill coverage
+  (0.20/0.10), experience fit (0.10), location (0.05), and a behavioral
+  composite of recency, response rate, notice period, GitHub activity, and
+  open-to-work status (0.25). A keyword-stuffer penalty discounts skill
+  matches unbacked by assessment scores or real duration. Consulting-only
+  candidates, zero-skill-coverage candidates, and honeypots (impossible
+  tenure vs. experience, skill duration exceeding total experience) are
+  excluded before scoring. Runtime is CPU-only with no network calls during
+  ranking.
+
+# ============================================================================
+# Declarations
+# ============================================================================
+declarations:
+  read_submission_spec: true        
+  code_is_original_work: true       
+  no_collusion: true                
+  honeypot_check_done: true        
+  reproduction_tested: true         

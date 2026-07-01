@@ -7,8 +7,6 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 from rapidfuzz import process, fuzz
 
-from docx import Document
-
 RAW_TOP_K = 5000
 TOP_K = 500
 RRF_K = 60
