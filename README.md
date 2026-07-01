@@ -42,6 +42,10 @@ Run the `rank.py` script to perform ranking on the candidate dataset and store r
 python rank.py submissiom.csv
 ```
 
+## Overview
+<img width="834" height="819" alt="image" src="https://github.com/user-attachments/assets/ec0f9ac6-9ffc-4cc6-a946-42ff8b493c91" />
+
+
 ## Architectural Decisions
 
 ### Precomputation
