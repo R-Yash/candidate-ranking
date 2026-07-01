@@ -24,11 +24,11 @@ NON_TECHNICAL_ENGINEERING = {
 PROFICIENCY_WEIGHTS = {"expert": 0.9, "advanced": 0.9, "intermediate": 0.8, "beginner": 0.75}
 
 WEIGHTS = {
-    "rrf": 0.40,
+    "rrf": 0.30,
     "required_skills": 0.20,
     "preferred_skills": 0.10,
     "experience": 0.10,
-    "behavioral": 0.15,
+    "behavioral": 0.25,
     "location": 0.05,
 }
 
@@ -86,18 +86,22 @@ def behavioral_score(signals, preferred_notice_days):
     response = float(signals.get("recruiter_response_rate", 0.5))
     interview = float(signals.get("interview_completion_rate", 0.5))
 
-    notice_days = int(signals.get("notice_period_days", 90))
+    notice_days = int(signals.get("notice_period_days", 30))
     if notice_days <= preferred_notice_days:
         notice = 1.0
     elif notice_days <= 60:
-        notice = 0.6
+        notice = 0.25
     else:
-        notice = 0.2
+        notice = -0.4
 
     raw_github = float(signals.get("github_activity_score", -1))
     github = 0.0 if raw_github < 0 else min(raw_github / 50.0, 1.0)
 
-    return 0.30 * recency + 0.25 * response + 0.20 * notice + 0.15 * interview + 0.10 * github
+    open_flag = 1.0 if signals.get("open_to_work_flag", True) else 0.20
+
+    return 0.25 * recency + 0.20 * response + 0.20 * notice + 0.15 * interview + 0.10 * github + 0.10 * open_flag
+
+    # return 0.30 * recency + 0.20 * response + 0.30 * notice + 0.10 * interview + 0.10 * github
 
 def skill_coverage(candidate_skills_raw, target_skills, assessment_scores):
     if not target_skills:
@@ -136,7 +140,7 @@ def is_honeypot(candidate):
                 return True
 
         total_career_months = sum(j.get("duration_months", 0) for j in career)
-        if total_career_months > yoe_months * 1.25:
+        if total_career_months > yoe_months * 1.5:
             return True
         
         for skill in skills:
@@ -218,7 +222,7 @@ def build_reasoning(candidate, parsed_jd, years, req_matches, pref_matches, req_
     if tone == "positive":
         top_skills = ", ".join(describe_skill(s) for s in req_matches[:3])
         if req_matches:
-            lead = f"{identity}, {years:.1f} yrs. {len(req_matches)}/{n_req} required skills — {top_skills}."
+            lead = f"{identity}, {years:.1f} yrs. required skills — {top_skills}."
         else:
             lead = f"{identity}, {years:.1f} yrs."
         if pref_matches:
@@ -240,7 +244,7 @@ def build_reasoning(candidate, parsed_jd, years, req_matches, pref_matches, req_
         )
  
     if years < min_exp:
-        exp_note = f"{years:.1f} yrs is below the {min_exp}–{max_exp} yr target."
+        exp_note = f"{years:.1f} yrs is below the {min_exp}-{max_exp} yr target."
     elif years > max_exp:
         exp_note = f"{years:.1f} yrs exceeds the target range of {max_exp} yrs."
     else:
@@ -305,8 +309,8 @@ def score_all(retrieved, candidates_by_id, parsed_jd, top_k=100):
 
         signals = c.get("redrob_signals", {})
         
-        if not signals.get("open_to_work_flag", True):
-            continue
+        # if not signals.get("open_to_work_flag", True):
+        #     continue
         if is_consulting_only(c.get("career_history", [])):
             continue
 
@@ -384,7 +388,7 @@ if __name__ == "__main__":
 
     print("Required skills:", parsed_jd["required_skills"])
     print("Preferred skills:", parsed_jd["preferred_skills"])
-    print(f"Experience: {parsed_jd['min_experience']}–{parsed_jd['max_experience']} years")
+    print(f"Experience: {parsed_jd['min_experience']}-{parsed_jd['max_experience']} years")
     print(f"Notice: ≤{parsed_jd['preferred_notice_days']} days preferred\n")
 
     retrieved = retrieve(top_k=1500,raw_top_k=5000,weights={"profile_summary": 0.65, "skills": 0.65, "career_history": 0.75, "graph": 0.9})
